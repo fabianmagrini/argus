@@ -1,0 +1,24 @@
+node_modules/
+dist/
+.DS_Store
+
+# Drizzle generated migrations
+drizzle/
+
+# Environment variables — never commit
+.env
+.env.local
+.env.*.local
+
+# Vite build output
+artifacts/dashboard/dist/
+
+# TypeScript project reference outputs
+lib/*/dist/
+lib/*/tsconfig.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# pnpm
+.pnpm-store/

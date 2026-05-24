@@ -1,0 +1,26 @@
+{
+  "name": "@argus/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "push": "drizzle-kit push",
+    "generate": "drizzle-kit generate",
+    "studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "drizzle-orm": "catalog:",
+    "pg": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/pg": "^8.11.13",
+    "drizzle-kit": "^0.31.0",
+    "drizzle-zod": "^0.7.0",
+    "tsx": "catalog:",
+    "zod": "catalog:"
+  }
+}
