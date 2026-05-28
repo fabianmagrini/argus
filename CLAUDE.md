@@ -14,7 +14,11 @@ docker compose up -d
 DATABASE_URL=postgresql://argus:argus@localhost:5433/argus \
   pnpm --filter @argus/db run push
 
-# API server (port 5000)
+# Seed the database with realistic sample data (requires a clean DB)
+DATABASE_URL=postgresql://argus:argus@localhost:5433/argus \
+  pnpm --filter @argus/scripts run seed
+
+# API server (port 5000) — uses tsx watch for hot reload in dev
 DATABASE_URL=postgresql://argus:argus@localhost:5433/argus PORT=5000 \
   pnpm --filter @argus/api-server run dev
 
@@ -25,8 +29,17 @@ DATABASE_URL=postgresql://argus:argus@localhost:5433/argus PORT=3000 BASE_PATH=/
 # Run all tests
 pnpm test
 
+# Full typecheck + tests + lint (single verification command)
+pnpm run check
+
 # Full typecheck
 pnpm run typecheck
+
+# Lint
+pnpm run lint
+
+# Format all files
+pnpm run format
 
 # Build everything
 pnpm run build
@@ -34,8 +47,16 @@ pnpm run build
 # Regenerate API client + Zod schemas from OpenAPI spec
 pnpm --filter @argus/api-spec run codegen
 
-# Push DB schema to dev database
+# Push DB schema to dev database (dev only — destructive)
 pnpm --filter @argus/db run push
+
+# Generate a migration file from schema changes (safe for production)
+DATABASE_URL=postgresql://argus:argus@localhost:5433/argus \
+  pnpm --filter @argus/db run generate
+
+# Apply pending migrations
+DATABASE_URL=postgresql://argus:argus@localhost:5433/argus \
+  pnpm --filter @argus/db run migrate
 ```
 
 ## Package names
@@ -85,9 +106,55 @@ Tests are split across three packages:
 |---------|---------|---------------|
 | `lib/metrics` | `pnpm --filter @argus/metrics test` | Unit: DORA classifiers, health/leaderboard scores, period helpers |
 | `apps/api-server` | `pnpm --filter @argus/api-server test` | Integration: HTTP routes (supertest + mock db); Contract: response shapes vs Zod schemas |
-| `apps/dashboard` | `pnpm --filter @argus/dashboard test` | Component: React components with @testing-library/react |
+| `apps/dashboard` | `pnpm --filter @argus/dashboard test` | Component/page: React components and pages with @testing-library/react |
 
 Run all at once: `pnpm test`
+
+### Writing API server integration tests
+
+Route tests use a lightweight mock Drizzle client (`apps/api-server/tests/helpers/mock-db.ts`) and supertest. There is no real database involved.
+
+```ts
+import { createApp } from "../../src/app.js";
+import { createMockDb } from "../helpers/mock-db.js";
+
+// selectResults: consumed in order, one array per db.select() call in the handler
+// selectFallback: used when selectResults is exhausted
+// insertResult / updateResult / deleteResult: returned by those operations
+// executeRows: returned by db.execute(sql`...`)
+
+const db = createMockDb({
+  insertResult: [{ id: 1, name: "Acme", ... }],
+});
+const app = createApp(db);
+const res = await request(app).post("/api/teams").send({ name: "Acme" });
+```
+
+For handlers that call `db.select()` multiple times (e.g. metrics endpoints), pass `selectResults` as an array of arrays — each inner array is the result of one sequential `select()` call.
+
+### Writing dashboard page tests
+
+Page tests mock `@argus/api-client-react` hooks via `vi.mock` and wrap the component in `QueryClientProvider` using the `renderWithProviders` helper (`apps/dashboard/tests/helpers/render.tsx`).
+
+```tsx
+import { renderWithProviders } from "../helpers/render";
+
+vi.mock("@argus/api-client-react", () => ({
+  useListTeams: vi.fn(),
+}));
+import { useListTeams } from "@argus/api-client-react";
+vi.mocked(useListTeams).mockReturnValue({ data: [], isLoading: false } as any);
+
+renderWithProviders(<MyPage />);
+```
+
+If a page uses `Link` from `wouter`, mock it to avoid router context requirements:
+```ts
+vi.mock("wouter", async (importOriginal) => ({
+  ...(await importOriginal()),
+  Link: ({ href, children }: any) => <a href={href}>{children}</a>,
+}));
+```
 
 ## DORA metric thresholds (Google State of DevOps 2023)
 
@@ -120,6 +187,9 @@ Leaderboard score = (df + lt + cfr + mttr) / 4 × 25 (range 25–100).
 - Dashboard `vite.config.ts` requires both `PORT` and `BASE_PATH` env vars — it throws at startup if either is missing.
 - pnpm enforces a 1-day minimum npm package release age (`minimumReleaseAge: 1440` in `pnpm-workspace.yaml`) as a supply-chain defence. Do not disable it.
 - `@argus/metrics` has no runtime dependencies — keep it that way. If you need I/O, put it in the route layer.
+- `reviewTurnaroundHours` in `GET /metrics/flow` is hardcoded to `0` (`apps/api-server/src/routes/metrics.ts:331`). No review timestamp data is stored in the schema, so this metric cannot be computed yet. Do not "fix" it — there is no data to compute it from.
+- Schema changes for production: use `pnpm --filter @argus/db run generate` to create a migration file, then `run migrate` to apply it. Never use `run push` against a database with real data — it is destructive.
+- The seed script (`pnpm --filter @argus/scripts run seed`) is **not idempotent**. Run it only against a freshly pushed database. To reset: `docker compose down -v && docker compose up -d && pnpm --filter @argus/db run push`.
 
 ## Stack
 
