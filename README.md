@@ -1,6 +1,8 @@
 # Argus — Engineering Analytics Platform
 
 > A self-hosted platform for measuring software engineering productivity using DORA metrics, flow metrics, and team health scores.
+>
+> **Further reading:** [docs/reference.md](docs/reference.md) — architecture, data model, full API reference.
 
 ## What it does
 
@@ -82,14 +84,20 @@ Tests are organised by package:
 |---------|-------------|
 | `pnpm install` | Install all workspace dependencies |
 | `pnpm run build` | Typecheck + build all packages |
+| `pnpm run check` | Typecheck + test + lint (single verification command) |
 | `pnpm run typecheck` | Full typecheck across all packages |
 | `pnpm run typecheck:libs` | Typecheck lib/* packages only (tsc --build) |
 | `pnpm test` | Run all tests once |
 | `pnpm test:watch` | Run tests in watch mode |
-| `pnpm --filter @argus/api-server run dev` | Start API server (port 5000) |
+| `pnpm run lint` | Lint all packages |
+| `pnpm run format` | Format all files with Prettier |
+| `pnpm --filter @argus/api-server run dev` | Start API server (port 5000, hot reload) |
 | `pnpm --filter @argus/dashboard run dev` | Start dashboard Vite dev server |
+| `pnpm --filter @argus/scripts run seed` | Seed dev database with sample data |
 | `pnpm --filter @argus/api-spec run codegen` | Regenerate hooks + Zod schemas from openapi.yaml |
-| `pnpm --filter @argus/db run push` | Push Drizzle schema to DB (dev only) |
+| `pnpm --filter @argus/db run push` | Push Drizzle schema to DB (dev only — destructive) |
+| `pnpm --filter @argus/db run generate` | Generate a migration file from schema changes |
+| `pnpm --filter @argus/db run migrate` | Apply pending migrations |
 
 ## Environment variables
 
