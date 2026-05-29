@@ -5,5 +5,10 @@ export default defineConfig({
     name: "metrics",
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      include: ["src/**"],
+      thresholds: { lines: 85, functions: 85, branches: 75, statements: 85 },
+    },
   },
 });

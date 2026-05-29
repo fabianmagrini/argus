@@ -143,9 +143,9 @@ describe("GET /api/metrics/team-health", () => {
     const db = createMockDb({
       selectResults: [
         [team],
-        [{ total: 20, failed: 1 }],
-        [{ total: 10, avgCycleTime: 3600 }],
-        [{ total: 0 }],
+        [{ teamId: 1, total: 20, failed: 1 }],
+        [{ teamId: 1, total: 10, avgCycleTime: 3600 }],
+        [{ teamId: 1, total: 0 }],
       ],
     });
     const app = createApp(db);

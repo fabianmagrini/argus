@@ -343,22 +343,38 @@ export function createMetricsRouter(db: Db): IRouter {
     const periodStart = getPeriodStart(period);
     const periodDays = getPeriodDays(period);
 
-    const teams = await db.select().from(teamsTable).orderBy(teamsTable.name);
-
-    const results = await Promise.all(teams.map(async (team) => {
-      const [deployStats] = await db.select({
+    const [teams, deployGroups, prGroups, incidentGroups] = await Promise.all([
+      db.select().from(teamsTable).orderBy(teamsTable.name),
+      db.select({
+        teamId: deploymentsTable.teamId,
         total: count(),
         failed: sql<number>`count(*) filter (where status in ('failed','rolled_back'))`,
-      }).from(deploymentsTable).where(and(gte(deploymentsTable.deployedAt, periodStart), eq(deploymentsTable.teamId, team.id)));
-
-      const [prStats] = await db.select({
+      }).from(deploymentsTable)
+        .where(gte(deploymentsTable.deployedAt, periodStart))
+        .groupBy(deploymentsTable.teamId),
+      db.select({
+        teamId: pullRequestsTable.teamId,
         total: count(),
         avgCycleTime: avg(pullRequestsTable.cycleTimeSeconds),
-      }).from(pullRequestsTable).where(and(gte(pullRequestsTable.openedAt, periodStart), eq(pullRequestsTable.teamId, team.id)));
+      }).from(pullRequestsTable)
+        .where(gte(pullRequestsTable.openedAt, periodStart))
+        .groupBy(pullRequestsTable.teamId),
+      db.select({
+        teamId: incidentsTable.teamId,
+        total: count(),
+      }).from(incidentsTable)
+        .where(gte(incidentsTable.openedAt, periodStart))
+        .groupBy(incidentsTable.teamId),
+    ]);
 
-      const [incidentStats] = await db.select({ total: count() })
-        .from(incidentsTable)
-        .where(and(gte(incidentsTable.openedAt, periodStart), eq(incidentsTable.teamId, team.id)));
+    const deployMap = new Map(deployGroups.map(r => [r.teamId, r]));
+    const prMap = new Map(prGroups.map(r => [r.teamId, r]));
+    const incidentMap = new Map(incidentGroups.map(r => [r.teamId, r]));
+
+    const results = teams.map((team) => {
+      const deployStats = deployMap.get(team.id);
+      const prStats = prMap.get(team.id);
+      const incidentStats = incidentMap.get(team.id);
 
       const deploys = Number(deployStats?.total ?? 0);
       const failed = Number(deployStats?.failed ?? 0);
@@ -382,7 +398,7 @@ export function createMetricsRouter(db: Db): IRouter {
         avgCycleTimeDays: Math.round(avgCycleTimeDays * 100) / 100,
         doraRating,
       };
-    }));
+    });
 
     res.json(GetTeamHealthMetricsResponse.parse(results));
   });
@@ -504,18 +520,30 @@ export function createMetricsRouter(db: Db): IRouter {
     const periodStart = getPeriodStart(period);
     const periodDays = getPeriodDays(period);
 
-    const teams = await db.select().from(teamsTable).orderBy(teamsTable.name);
-
-    const entries = await Promise.all(teams.map(async (team) => {
-      const [deployStats] = await db.select({
+    const [teams, deployGroups, incidentGroups] = await Promise.all([
+      db.select().from(teamsTable).orderBy(teamsTable.name),
+      db.select({
+        teamId: deploymentsTable.teamId,
         total: count(),
         failed: sql<number>`count(*) filter (where status in ('failed','rolled_back'))`,
         avgLeadTime: avg(deploymentsTable.leadTimeSeconds),
-      }).from(deploymentsTable).where(and(gte(deploymentsTable.deployedAt, periodStart), eq(deploymentsTable.teamId, team.id)));
+      }).from(deploymentsTable)
+        .where(gte(deploymentsTable.deployedAt, periodStart))
+        .groupBy(deploymentsTable.teamId),
+      db.select({
+        teamId: incidentsTable.teamId,
+        avgRecovery: avg(incidentsTable.recoveryTimeSeconds),
+      }).from(incidentsTable)
+        .where(and(gte(incidentsTable.openedAt, periodStart), isNotNull(incidentsTable.recoveryTimeSeconds)))
+        .groupBy(incidentsTable.teamId),
+    ]);
 
-      const [incStats] = await db.select({ avgRecovery: avg(incidentsTable.recoveryTimeSeconds) })
-        .from(incidentsTable)
-        .where(and(gte(incidentsTable.openedAt, periodStart), eq(incidentsTable.teamId, team.id), isNotNull(incidentsTable.recoveryTimeSeconds)));
+    const deployMap = new Map(deployGroups.map(r => [r.teamId, r]));
+    const incidentMap = new Map(incidentGroups.map(r => [r.teamId, r]));
+
+    const entries = teams.map((team) => {
+      const deployStats = deployMap.get(team.id);
+      const incStats = incidentMap.get(team.id);
 
       const deploys = Number(deployStats?.total ?? 0);
       const failed = Number(deployStats?.failed ?? 0);
@@ -539,7 +567,7 @@ export function createMetricsRouter(db: Db): IRouter {
         recoveryTimeHours: Math.round(mttrHours * 100) / 100,
         doraRating,
       };
-    }));
+    });
 
     const ranked = entries
       .sort((a, b) => b.score - a.score)

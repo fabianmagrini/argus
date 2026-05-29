@@ -7,9 +7,9 @@
  * Or with a custom database URL:
  *   DATABASE_URL=postgresql://... pnpm --filter @argus/scripts run seed
  *
- * The script is NOT idempotent — run against a fresh database or after
- * wiping tables. Re-running will fail on unique constraints (e.g. team names).
- * To reset: docker compose down -v && docker compose up -d && pnpm --filter @argus/db run push
+ * Idempotent: truncates all tables before inserting, so it is safe to
+ * re-run without resetting the Docker volume. RESTART IDENTITY resets
+ * serial sequences so IDs start from 1 on each run.
  */
 
 import {
@@ -38,6 +38,14 @@ function hoursAgo(n: number): Date {
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+
+console.log("Truncating tables...");
+await pool.query(
+  "TRUNCATE events, incidents, pull_requests, deployments, repositories, teams RESTART IDENTITY CASCADE",
+);
+console.log("  Done.");
 
 // ── Teams ─────────────────────────────────────────────────────────────────────
 

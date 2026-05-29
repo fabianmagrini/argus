@@ -25,6 +25,7 @@ class QueryBuilder<T> implements PromiseLike<T> {
   from(): this { return this; }
   where(): this { return this; }
   orderBy(): this { return this; }
+  groupBy(): this { return this; }
   limit(): Promise<T> { return Promise.resolve(this._result); }
   returning(): Promise<T> { return Promise.resolve(this._result); }
   set(): this { return this; }

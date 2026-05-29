@@ -11,5 +11,10 @@ export default defineConfig({
     env: {
       DATABASE_URL: "postgresql://test:test@localhost:5432/test_argus",
     },
+    coverage: {
+      provider: "v8",
+      include: ["src/**"],
+      thresholds: { lines: 60, functions: 60, branches: 50, statements: 60 },
+    },
   },
 });

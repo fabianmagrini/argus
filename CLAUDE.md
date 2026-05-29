@@ -189,7 +189,15 @@ Leaderboard score = (df + lt + cfr + mttr) / 4 × 25 (range 25–100).
 - `@argus/metrics` has no runtime dependencies — keep it that way. If you need I/O, put it in the route layer.
 - `reviewTurnaroundHours` in `GET /metrics/flow` is hardcoded to `0` (`apps/api-server/src/routes/metrics.ts:331`). No review timestamp data is stored in the schema, so this metric cannot be computed yet. Do not "fix" it — there is no data to compute it from.
 - Schema changes for production: use `pnpm --filter @argus/db run generate` to create a migration file, then `run migrate` to apply it. Never use `run push` against a database with real data — it is destructive.
-- The seed script (`pnpm --filter @argus/scripts run seed`) is **not idempotent**. Run it only against a freshly pushed database. To reset: `docker compose down -v && docker compose up -d && pnpm --filter @argus/db run push`.
+- The seed script (`pnpm --filter @argus/scripts run seed`) truncates all tables before inserting — it is safe to re-run against an existing database. To fully reset the Docker volume: `docker compose down -v && docker compose up -d && pnpm --filter @argus/db run push`.
+
+## Known Gaps (prioritized for next development)
+
+1. **API pagination** — all CRUD list endpoints (`GET /teams`, `GET /deployments`, etc.) return unbounded results. Add `limit`/`offset` to `lib/api-spec/openapi.yaml`, run codegen, then add to route handlers and update integration tests.
+2. **`reviewTurnaroundHours` stub** — hardcoded to `0` at `apps/api-server/src/routes/metrics.ts` in `GET /metrics/flow`. Unblocked by adding `first_reviewed_at timestamptz` to the `pull_requests` schema (requires a migration via `pnpm --filter @argus/db run generate`).
+3. **Webhook ingestion** — `lib/integrations/` glob in `pnpm-workspace.yaml` is a placeholder. Build `@argus/integrations-github` and `@argus/integrations-pagerduty` packages that push data into the existing CRUD endpoints. The `events` table (JSONB metadata + namespaced `type`) is designed to receive raw webhook payloads.
+4. **Authentication** — no auth on any endpoint. Add API key middleware in `apps/api-server/src/app.ts` before shipping externally.
+5. **Coverage thresholds** — current thresholds in each `vitest.config.ts` are intentionally conservative (metrics: 85%, api-server: 60%, dashboard: 35%). Raise them as coverage improves.
 
 ## Stack
 
