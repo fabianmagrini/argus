@@ -56,6 +56,12 @@ describe("GET /api/incidents", () => {
     const res = await request(app).get("/api/incidents?status=closed");
     expect(res.status).toBe(400);
   });
+
+  it("accepts limit and offset pagination params", async () => {
+    const app = createApp(createMockDb({ selectFallback: [baseIncident] }));
+    const res = await request(app).get("/api/incidents?limit=10&offset=20");
+    expect(res.status).toBe(200);
+  });
 });
 
 describe("POST /api/incidents", () => {

@@ -82,4 +82,10 @@ describe("GET /api/events", () => {
     const res = await request(app).get("/api/events?limit=10");
     expect(res.status).toBe(200);
   });
+
+  it("accepts limit and offset pagination params", async () => {
+    const app = createApp(createMockDb({ selectFallback: [baseEvent] }));
+    const res = await request(app).get("/api/events?limit=10&offset=50");
+    expect(res.status).toBe(200);
+  });
 });

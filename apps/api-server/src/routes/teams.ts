@@ -3,6 +3,8 @@ import { eq } from "drizzle-orm";
 import { teamsTable } from "@argus/db";
 import type { Db } from "./index.js";
 import {
+  ListTeamsQueryParams,
+  ListTeamsResponse,
   CreateTeamBody,
   GetTeamParams,
   GetTeamResponse,
@@ -10,7 +12,6 @@ import {
   UpdateTeamBody,
   UpdateTeamResponse,
   DeleteTeamParams,
-  ListTeamsResponse,
 } from "@argus/api-zod";
 
 /**
@@ -28,8 +29,18 @@ import {
 export function createTeamsRouter(db: Db): IRouter {
   const router: IRouter = Router();
 
-  router.get("/teams", async (_req, res): Promise<void> => {
-    const teams = await db.select().from(teamsTable).orderBy(teamsTable.createdAt);
+  router.get("/teams", async (req, res): Promise<void> => {
+    const query = ListTeamsQueryParams.safeParse(req.query);
+    if (!query.success) {
+      res.status(400).json({ error: query.error.message });
+      return;
+    }
+    const teams = await db
+      .select()
+      .from(teamsTable)
+      .orderBy(teamsTable.createdAt)
+      .limit(query.data.limit)
+      .offset(query.data.offset);
     res.json(ListTeamsResponse.parse(teams));
   });
 

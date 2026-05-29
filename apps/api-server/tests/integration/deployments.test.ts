@@ -54,6 +54,12 @@ describe("GET /api/deployments", () => {
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty("error");
   });
+
+  it("accepts limit and offset pagination params", async () => {
+    const app = createApp(createMockDb({ selectFallback: [baseDeployment] }));
+    const res = await request(app).get("/api/deployments?limit=10&offset=20");
+    expect(res.status).toBe(200);
+  });
 });
 
 describe("POST /api/deployments", () => {

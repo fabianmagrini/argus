@@ -43,7 +43,8 @@ export function createIncidentsRouter(db: Db): IRouter {
       .from(incidentsTable)
       .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(desc(incidentsTable.openedAt))
-      .limit(query.data.limit ?? 50);
+      .limit(query.data.limit)
+      .offset(query.data.offset);
     res.json(ListIncidentsResponse.parse(incidents));
   });
 

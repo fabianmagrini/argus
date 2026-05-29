@@ -42,7 +42,9 @@ export function createRepositoriesRouter(db: Db): IRouter {
       .select()
       .from(repositoriesTable)
       .where(conditions.length ? and(...conditions) : undefined)
-      .orderBy(repositoriesTable.createdAt);
+      .orderBy(repositoriesTable.createdAt)
+      .limit(query.data.limit)
+      .offset(query.data.offset);
     res.json(ListRepositoriesResponse.parse(repos));
   });
 

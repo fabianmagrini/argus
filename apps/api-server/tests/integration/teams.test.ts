@@ -29,6 +29,18 @@ describe("GET /api/teams", () => {
     expect(res.body).toHaveLength(1);
     expect(res.body[0]).toMatchObject({ id: 1, name: "Platform" });
   });
+
+  it("accepts limit and offset pagination params", async () => {
+    const app = createApp(createMockDb({ selectFallback: [baseTeam] }));
+    const res = await request(app).get("/api/teams?limit=10&offset=20");
+    expect(res.status).toBe(200);
+  });
+
+  it("uses default limit and offset when omitted", async () => {
+    const app = createApp(createMockDb({ selectFallback: [] }));
+    const res = await request(app).get("/api/teams");
+    expect(res.status).toBe(200);
+  });
 });
 
 describe("POST /api/teams", () => {

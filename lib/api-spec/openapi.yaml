@@ -44,6 +44,17 @@ paths:
       operationId: listTeams
       tags: [teams]
       summary: List all teams
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
       responses:
         "200":
           description: List of teams
@@ -143,6 +154,16 @@ paths:
           in: query
           schema:
             type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
       responses:
         "200":
           description: List of repositories
@@ -256,6 +277,11 @@ paths:
           schema:
             type: integer
             default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
       responses:
         "200":
           description: List of deployments
@@ -356,6 +382,11 @@ paths:
           schema:
             type: integer
             default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
       responses:
         "200":
           description: List of pull requests
@@ -457,6 +488,11 @@ paths:
           schema:
             type: integer
             default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
       responses:
         "200":
           description: List of incidents
@@ -569,6 +605,11 @@ paths:
           schema:
             type: integer
             default: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
       responses:
         "200":
           description: List of events

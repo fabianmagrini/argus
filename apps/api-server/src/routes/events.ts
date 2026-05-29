@@ -52,7 +52,8 @@ export function createEventsRouter(db: Db): IRouter {
       .from(eventsTable)
       .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(desc(eventsTable.occurredAt))
-      .limit(query.data.limit ?? 100);
+      .limit(query.data.limit)
+      .offset(query.data.offset);
     res.json(ListEventsResponse.parse(events));
   });
 

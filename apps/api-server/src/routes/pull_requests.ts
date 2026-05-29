@@ -43,7 +43,8 @@ export function createPullRequestsRouter(db: Db): IRouter {
       .from(pullRequestsTable)
       .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(desc(pullRequestsTable.openedAt))
-      .limit(query.data.limit ?? 50);
+      .limit(query.data.limit)
+      .offset(query.data.offset);
     res.json(ListPullRequestsResponse.parse(prs));
   });
 

@@ -58,6 +58,12 @@ describe("GET /api/pull-requests", () => {
     const res = await request(app).get("/api/pull-requests?teamId=1&repositoryId=1");
     expect(res.status).toBe(200);
   });
+
+  it("accepts limit and offset pagination params", async () => {
+    const app = createApp(createMockDb({ selectFallback: [basePr] }));
+    const res = await request(app).get("/api/pull-requests?limit=10&offset=20");
+    expect(res.status).toBe(200);
+  });
 });
 
 describe("POST /api/pull-requests", () => {

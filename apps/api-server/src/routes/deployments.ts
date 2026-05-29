@@ -43,7 +43,8 @@ export function createDeploymentsRouter(db: Db): IRouter {
       .from(deploymentsTable)
       .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(desc(deploymentsTable.deployedAt))
-      .limit(query.data.limit ?? 50);
+      .limit(query.data.limit)
+      .offset(query.data.offset);
     res.json(ListDeploymentsResponse.parse(deployments));
   });
 

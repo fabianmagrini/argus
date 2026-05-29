@@ -37,6 +37,18 @@ describe("GET /api/repositories", () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
   });
+
+  it("accepts limit and offset pagination params", async () => {
+    const app = createApp(createMockDb({ selectFallback: [baseRepo] }));
+    const res = await request(app).get("/api/repositories?limit=10&offset=20");
+    expect(res.status).toBe(200);
+  });
+
+  it("accepts teamId with pagination", async () => {
+    const app = createApp(createMockDb({ selectFallback: [] }));
+    const res = await request(app).get("/api/repositories?teamId=1&limit=5&offset=0");
+    expect(res.status).toBe(200);
+  });
 });
 
 describe("POST /api/repositories", () => {
